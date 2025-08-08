@@ -22,16 +22,21 @@ mod tests {
             input.trim().to_string()
         });
 
-        let appleid_closure = move || (email.clone(), password.clone());
+        let appleid_closure = move || Ok((email.clone(), password.clone()));
         // ask console for 2fa code, make sure it is only 6 digits, no extra characters
         let tfa_closure = || {
             println!("Enter 2FA code: ");
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).unwrap();
-            input.trim().to_string()
+            Ok(input.trim().to_string())
         };
-        let acc = AppleAccount::login(appleid_closure, tfa_closure, AnisetteConfiguration::new()
-            .set_configuration_path(PathBuf::from_str("anisette_test").unwrap())).await;
+        let acc = AppleAccount::login(
+            appleid_closure,
+            tfa_closure,
+            AnisetteConfiguration::new()
+                .set_configuration_path(PathBuf::from_str("anisette_test").unwrap()),
+        )
+        .await;
 
         let account = acc.unwrap();
         println!("data {:?}", account.get_name());
