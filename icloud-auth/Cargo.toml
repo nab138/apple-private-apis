@@ -14,7 +14,7 @@ vendored-botan = ["botan/vendored"]
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 base64 = "0.22"
-srp = { version = "0.6.0", path = "./rustcrypto-srp" }
+srp = { version = "0.6.0", package = "nab138_srp" }
 pbkdf2 = "0.11"
 sha2 = "0.10"
 rand = "0.9"
