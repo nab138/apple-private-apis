@@ -1,5 +1,5 @@
 use crate::Error;
-use omnisette::{AnisetteConfiguration, AnisetteHeaders};
+use omnisette_fork::{AnisetteConfiguration, AnisetteHeaders};
 use std::{collections::HashMap, time::SystemTime};
 
 #[derive(Debug, Clone)]
@@ -15,7 +15,11 @@ impl AnisetteData {
         let mut b = AnisetteHeaders::get_anisette_headers_provider(config.clone())?;
         let base_headers = b.provider.get_authentication_headers().await?;
 
-        Ok(AnisetteData { base_headers, generated_at: SystemTime::now(), config })
+        Ok(AnisetteData {
+            base_headers,
+            generated_at: SystemTime::now(),
+            config,
+        })
     }
 
     pub fn needs_refresh(&self) -> bool {

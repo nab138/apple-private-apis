@@ -6,14 +6,13 @@
 
 use crate::adi_proxy::{ADIProxyAnisetteProvider, ConfigurableADIProxy};
 use crate::anisette_headers_provider::AnisetteHeadersProvider;
+use adi_proxy::ADIError;
 use std::io;
 use std::path::PathBuf;
-use adi_proxy::ADIError;
 use thiserror::Error;
 
 pub mod adi_proxy;
 pub mod anisette_headers_provider;
-pub mod store_services_core;
 
 #[cfg(feature = "remote-anisette-v3")]
 pub mod remote_anisette_v3;
@@ -58,7 +57,7 @@ pub enum AnisetteError {
     #[error("Missing Libraries")]
     MissingLibraries,
     #[error("{0}")]
-    Anyhow(#[from] anyhow::Error)
+    Anyhow(#[from] anyhow::Error),
 }
 
 pub const DEFAULT_ANISETTE_URL: &str = "https://ani.f1sh.me/";
@@ -85,7 +84,7 @@ impl AnisetteConfiguration {
             anisette_url: DEFAULT_ANISETTE_URL.to_string(),
             anisette_url_v3: DEFAULT_ANISETTE_URL_V3.to_string(),
             configuration_path: PathBuf::new(),
-            macos_serial: "0".to_string()
+            macos_serial: "0".to_string(),
         }
     }
 
@@ -148,16 +147,13 @@ impl AnisetteHeaders {
             return Ok(AnisetteHeadersProviderRes::local(Box::new(prov)));
         }
 
-        // TODO: handle Err because it will just go to remote anisette and not tell the user anything
-        if let Ok(ssc_anisette_headers_provider) =
-            AnisetteHeaders::get_ssc_anisette_headers_provider(configuration.clone())
-        {
-            return Ok(ssc_anisette_headers_provider);
-        }
-
         #[cfg(feature = "remote-anisette-v3")]
         return Ok(AnisetteHeadersProviderRes::remote(Box::new(
-            remote_anisette_v3::RemoteAnisetteProviderV3::new(configuration.anisette_url_v3, configuration.configuration_path.clone(), configuration.macos_serial.clone()),
+            remote_anisette_v3::RemoteAnisetteProviderV3::new(
+                configuration.anisette_url_v3,
+                configuration.configuration_path.clone(),
+                configuration.macos_serial.clone(),
+            ),
         )));
 
         #[cfg(feature = "remote-anisette")]
@@ -167,21 +163,6 @@ impl AnisetteHeaders {
 
         #[cfg(not(feature = "remote-anisette"))]
         bail!(AnisetteMetaError::UnsupportedDevice)
-    }
-
-    pub fn get_ssc_anisette_headers_provider(
-        configuration: AnisetteConfiguration,
-    ) -> Result<AnisetteHeadersProviderRes, AnisetteError> {
-        let mut ssc_adi_proxy = store_services_core::StoreServicesCoreADIProxy::new(
-            configuration.configuration_path(),
-        )?;
-        let config_path = configuration.configuration_path();
-        ssc_adi_proxy.set_provisioning_path(config_path.to_str().ok_or(
-            AnisetteError::InvalidArgument("configuration.configuration_path".to_string()),
-        )?)?;
-        Ok(AnisetteHeadersProviderRes::local(Box::new(
-            ADIProxyAnisetteProvider::new(ssc_adi_proxy, config_path.to_path_buf())?,
-        )))
     }
 }
 
