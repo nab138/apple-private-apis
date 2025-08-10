@@ -1,5 +1,5 @@
 use crate::Error;
-use nab138_omnisette::{AnisetteConfiguration, AnisetteHeaders};
+use omnisette::{AnisetteConfiguration, AnisetteHeaders};
 use std::{collections::HashMap, time::SystemTime};
 
 #[derive(Debug, Clone)]
