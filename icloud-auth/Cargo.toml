@@ -1,7 +1,10 @@
 [package]
-name = "icloud_auth_fork"
+name = "nab138_icloud_auth"
 version = "0.1.0"
 edition = "2021"
+description = "A library to authenticate with Apple's GSA servers"
+repository = "https://github.com/nab138/apple-private-apis"
+license = "MPL-2.0"
 
 [features]
 default = []
@@ -24,7 +27,7 @@ cbc = { version = "0.1.2", features = ["std"] }
 aes = "0.8.2"
 pkcs7 = "0.4.1"
 reqwest = { version = "0.11.14", features = ["blocking", "json", "default-tls"] }
-omnisette_fork = {path = "../omnisette", features = ["remote-anisette-v3"]}
+omnisette = { version = "0.1", features = ["remote-anisette-v3"], package = "nab138_omnisette" }
 thiserror = "2"
 tokio = "1"
 botan = "0.12.0"

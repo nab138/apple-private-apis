@@ -4,7 +4,7 @@ use base64::{engine::general_purpose, Engine};
 use botan::Cipher;
 use cbc::cipher::{BlockDecryptMut, KeyIvInit};
 use hmac::{Hmac, Mac};
-use omnisette_fork::AnisetteConfiguration;
+use nab138_omnisette::AnisetteConfiguration;
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
     Certificate, Client, ClientBuilder, Response,
@@ -351,7 +351,7 @@ impl AppleAccount {
     ///
     /// ```
     /// use icloud_auth::AppleAccount;
-    /// use omnisette_fork::AnisetteData;
+    /// use nab138_omnisette::AnisetteData;
     ///
     /// let anisette = AnisetteData::new();
     /// let account = AppleAccount::login(

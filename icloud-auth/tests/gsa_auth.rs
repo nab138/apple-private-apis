@@ -3,7 +3,7 @@ mod tests {
     use std::{path::PathBuf, str::FromStr};
 
     use icloud_auth::*;
-    use omnisette_fork::AnisetteConfiguration;
+    use nab138_omnisette::AnisetteConfiguration;
 
     #[tokio::test]
     async fn gsa_auth() {

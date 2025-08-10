@@ -1,5 +1,5 @@
 [package]
-name = "omnisette_fork"
+name = "nab138_omnisette"
 version = "0.1.0"
 edition = "2021"
 description = "A library to generate \"anisette\" data. Modified from Sidestore/apple-private-apis"

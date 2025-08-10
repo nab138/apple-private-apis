@@ -2,7 +2,7 @@ pub mod anisette;
 mod client;
 
 pub use client::{AppleAccount, AuthenticationExtras, LoginState, TrustedPhoneNumber, VerifyBody};
-pub use omnisette_fork::AnisetteConfiguration;
+pub use nab138_omnisette::AnisetteConfiguration;
 
 use thiserror::Error;
 #[derive(Debug, Error)]
@@ -22,5 +22,5 @@ pub enum Error {
     #[error("Request failed {0}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("Failed getting anisette data {0}")]
-    ErrorGettingAnisette(#[from] omnisette_fork::AnisetteError),
+    ErrorGettingAnisette(#[from] nab138_omnisette::AnisetteError),
 }
