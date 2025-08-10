@@ -92,6 +92,7 @@ pub struct AppleAccount {
     // pub spd:  Option<plist::Dictionary>,
     //mutable spd
     pub spd: Option<plist::Dictionary>,
+    pub apple_id: String,
     client: Client,
 }
 
@@ -170,12 +171,18 @@ async fn parse_response(
 }
 
 impl AppleAccount {
-    pub async fn new(config: AnisetteConfiguration) -> Result<Self, crate::Error> {
+    pub async fn new(
+        config: AnisetteConfiguration,
+        apple_id: String,
+    ) -> Result<Self, crate::Error> {
         let anisette = AnisetteData::new(config).await?;
-        Ok(Self::new_with_anisette(anisette)?)
+        Ok(Self::new_with_anisette(anisette, apple_id)?)
     }
 
-    pub fn new_with_anisette(anisette: AnisetteData) -> Result<Self, crate::Error> {
+    pub fn new_with_anisette(
+        anisette: AnisetteData,
+        apple_id: String,
+    ) -> Result<Self, crate::Error> {
         let client = ClientBuilder::new()
             .add_root_certificate(Certificate::from_der(APPLE_ROOT)?)
             // uncomment when debugging w/ charles proxy
@@ -187,6 +194,7 @@ impl AppleAccount {
         Ok(AppleAccount {
             client,
             anisette: Mutex::new(anisette),
+            apple_id,
             spd: None,
         })
     }
@@ -370,10 +378,11 @@ impl AppleAccount {
         tfa_closure: G,
         anisette: AnisetteData,
     ) -> Result<AppleAccount, Error> {
-        let mut _self = AppleAccount::new_with_anisette(anisette)?;
         let (username, password) = appleid_closure().map_err(|e| {
             Error::AuthSrpWithMessage(0, format!("Failed to get Apple ID credentials: {}", e))
         })?;
+        let mut _self = AppleAccount::new_with_anisette(anisette, username.clone())?;
+
         let mut response = _self.login_email_pass(&username, &password).await?;
         loop {
             match response {

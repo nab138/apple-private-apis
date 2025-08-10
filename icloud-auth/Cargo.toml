@@ -1,6 +1,6 @@
 [package]
 name = "nab138_icloud_auth"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "A library to authenticate with Apple's GSA servers"
 repository = "https://github.com/nab138/apple-private-apis"
