@@ -649,9 +649,8 @@ impl AppleAccount {
 
         let res = self
             .client
-            .put("https://gsa.apple.com/auth/verify/phone/")
+            .get("https://gsa.apple.com/auth")
             .headers(headers.await)
-            .json(&body)
             .send()
             .await?;
 
