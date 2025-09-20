@@ -4,24 +4,14 @@
 //!
 //! If you want remote anisette, make sure the `remote-anisette` feature is enabled. (it's currently on by default)
 
-use crate::adi_proxy::{ADIProxyAnisetteProvider, ConfigurableADIProxy};
 use crate::anisette_headers_provider::AnisetteHeadersProvider;
-use adi_proxy::ADIError;
 use std::io;
 use std::path::PathBuf;
 use thiserror::Error;
 
-pub mod adi_proxy;
 pub mod anisette_headers_provider;
 
-#[cfg(feature = "remote-anisette-v3")]
 pub mod remote_anisette_v3;
-
-#[cfg(target_os = "macos")]
-pub mod aos_kit;
-
-#[cfg(feature = "remote-anisette")]
-pub mod remote_anisette;
 
 #[allow(dead_code)]
 pub struct AnisetteHeaders;
@@ -40,16 +30,12 @@ pub enum AnisetteError {
     PlistError(#[from] plist::Error),
     #[error("Request Error {0}")]
     ReqwestError(#[from] reqwest::Error),
-    #[cfg(feature = "remote-anisette-v3")]
     #[error("Provisioning socket error {0}")]
     WsError(#[from] tokio_tungstenite::tungstenite::error::Error),
-    #[cfg(feature = "remote-anisette-v3")]
     #[error("JSON error {0}")]
     SerdeError(#[from] serde_json::Error),
     #[error("IO error {0}")]
     IOError(#[from] io::Error),
-    #[error("ADI error {0}")]
-    ADIError(#[from] ADIError),
     #[error("Invalid library format")]
     InvalidLibraryFormat,
     #[error("Misc")]
@@ -142,27 +128,13 @@ impl AnisetteHeaders {
     pub fn get_anisette_headers_provider(
         configuration: AnisetteConfiguration,
     ) -> Result<AnisetteHeadersProviderRes, AnisetteError> {
-        #[cfg(target_os = "macos")]
-        if let Ok(prov) = aos_kit::AOSKitAnisetteProvider::new() {
-            return Ok(AnisetteHeadersProviderRes::local(Box::new(prov)));
-        }
-
-        #[cfg(feature = "remote-anisette-v3")]
-        return Ok(AnisetteHeadersProviderRes::remote(Box::new(
+        Ok(AnisetteHeadersProviderRes::remote(Box::new(
             remote_anisette_v3::RemoteAnisetteProviderV3::new(
                 configuration.anisette_url_v3,
                 configuration.configuration_path.clone(),
                 configuration.macos_serial.clone(),
             ),
-        )));
-
-        #[cfg(feature = "remote-anisette")]
-        return Ok(AnisetteHeadersProviderRes::remote(Box::new(
-            remote_anisette::RemoteAnisetteProvider::new(configuration.anisette_url),
-        )));
-
-        #[cfg(not(feature = "remote-anisette"))]
-        bail!(AnisetteMetaError::UnsupportedDevice)
+        )))
     }
 }
 
@@ -183,25 +155,5 @@ mod tests {
         )
         .is_ok()
         {}
-    }
-
-    #[cfg(not(feature = "async"))]
-    #[test]
-    fn fetch_anisette_auto() -> Result<()> {
-        use crate::{AnisetteConfiguration, AnisetteHeaders};
-        use log::info;
-        use std::path::PathBuf;
-
-        crate::tests::init_logger();
-
-        let mut provider = AnisetteHeaders::get_anisette_headers_provider(
-            AnisetteConfiguration::new()
-                .set_configuration_path(PathBuf::new().join("anisette_test")),
-        )?;
-        info!(
-            "Headers: {:?}",
-            provider.provider.get_authentication_headers()?
-        );
-        Ok(())
     }
 }

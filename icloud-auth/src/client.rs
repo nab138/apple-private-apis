@@ -688,6 +688,7 @@ impl AppleAccount {
     }
 
     pub async fn verify_2fa(&self, code: String) -> Result<LoginState, Error> {
+        println!("Verifying 2fa Code {}", code.clone());
         let headers = self.build_2fa_headers(false);
         // println!("Recieved code: {}", code);
         let res = self
@@ -700,6 +701,7 @@ impl AppleAccount {
             )
             .send()
             .await?;
+        println!("Response: {:?}", res);
 
         let res: plist::Dictionary = plist::from_bytes(res.text().await?.as_bytes())?;
 
