@@ -87,6 +87,11 @@ impl AnisetteConfiguration {
         self
     }
 
+    pub fn set_anisette_url_v3(mut self, anisette_url_v3: String) -> AnisetteConfiguration {
+        self.anisette_url_v3 = anisette_url_v3;
+        self
+    }
+
     pub fn set_macos_serial(mut self, macos_serial: String) -> AnisetteConfiguration {
         self.macos_serial = macos_serial;
         self

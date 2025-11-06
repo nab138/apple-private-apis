@@ -1,6 +1,6 @@
 [package]
 name = "nab138_omnisette"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "A library to generate \"anisette\" data. Modified from Sidestore/apple-private-apis"
 repository = "https://github.com/nab138/apple-private-apis"
