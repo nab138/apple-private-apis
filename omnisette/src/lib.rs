@@ -31,7 +31,7 @@ pub enum AnisetteError {
     #[error("Request Error {0}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("Provisioning socket error {0}")]
-    WsError(#[from] tokio_tungstenite::tungstenite::error::Error),
+    WsError(Box<tokio_tungstenite::tungstenite::error::Error>),
     #[error("JSON error {0}")]
     SerdeError(#[from] serde_json::Error),
     #[error("IO error {0}")]
@@ -44,6 +44,12 @@ pub enum AnisetteError {
     MissingLibraries,
     #[error("{0}")]
     Anyhow(#[from] anyhow::Error),
+}
+
+impl From<tokio_tungstenite::tungstenite::error::Error> for AnisetteError {
+    fn from(err: tokio_tungstenite::tungstenite::error::Error) -> Self {
+        AnisetteError::WsError(Box::new(err))
+    }
 }
 
 pub const DEFAULT_ANISETTE_URL: &str = "https://ani.f1sh.me/";
