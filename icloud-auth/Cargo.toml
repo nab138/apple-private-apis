@@ -26,7 +26,7 @@ cbc = { version = "0.1.2", features = ["std"] }
 aes = "0.8.2"
 pkcs7 = "0.4.1"
 reqwest = { version = "0.11.14", features = ["blocking", "json", "default-tls"] }
-omnisette = { version = "0.1.2", package = "nab138_omnisette" }
+omnisette = { version = "0.1.3", package = "nab138_omnisette" }
 thiserror = "2"
 tokio = "1"
 aes-gcm = "0.10.3"
