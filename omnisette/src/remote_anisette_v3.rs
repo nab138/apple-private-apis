@@ -41,7 +41,7 @@ fn bin_serialize_opt<S>(x: &Option<Vec<u8>>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    x.clone().map(|i| Data::new(i)).serialize(s)
+    x.clone().map(Data::new).serialize(s)
 }
 
 fn bin_deserialize_opt<'de, D>(d: D) -> Result<Option<Vec<u8>>, D::Error>
@@ -116,7 +116,7 @@ impl AnisetteState {
 
     fn md_lu(&self) -> [u8; 32] {
         let mut hasher = Sha256::new();
-        hasher.update(&self.keychain_identifier);
+        hasher.update(self.keychain_identifier);
         hasher.finalize().into()
     }
 
@@ -171,8 +171,7 @@ impl AnisetteData {
                     "X-Mme-Client-Info".to_string(),
                     self.device_description.clone(),
                 ),
-            ]
-            .into_iter(),
+            ],
         )
     }
 }
@@ -285,7 +284,7 @@ impl AnisetteClient {
         let http_client = make_reqwest()?;
         let resp = self
             .build_apple_request(
-                &state,
+                state,
                 http_client.get("https://gsa.apple.com/grandslam/GsService2/lookup"),
             )
             .send()
@@ -499,14 +498,14 @@ impl AnisetteHeadersProvider for RemoteAnisetteProviderV3 {
             client.provision(state).await?;
             plist::to_file_xml(&config_path, state)?;
         }
-        let data = match client.get_headers(&state).await {
+        let data = match client.get_headers(state).await {
             Ok(data) => data,
             Err(err) => {
                 if matches!(err, AnisetteError::AnisetteNotProvisioned) {
                     state.adi_pb = None;
                     client.provision(state).await?;
                     plist::to_file_xml(config_path, state)?;
-                    client.get_headers(&state).await?
+                    client.get_headers(state).await?
                 } else {
                     panic!()
                 }
