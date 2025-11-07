@@ -179,7 +179,7 @@ impl AppleAccount {
         apple_id: String,
     ) -> Result<Self, crate::Error> {
         let anisette = AnisetteData::new(config).await?;
-        Ok(Self::new_with_anisette(anisette, apple_id)?)
+        Self::new_with_anisette(anisette, apple_id)
     }
 
     pub fn new_with_anisette(
@@ -426,11 +426,8 @@ impl AppleAccount {
     }
 
     pub fn get_pet(&self) -> Option<String> {
-        let Some(token) = self.spd.as_ref().unwrap().get("t") else {
-            return None;
-        };
         Some(
-            token
+            self.spd.as_ref().unwrap().get("t")?
                 .as_dictionary()
                 .unwrap()
                 .get("com.apple.gs.idms.pet")
@@ -545,7 +542,7 @@ impl AppleAccount {
         );
 
         let verifier: SrpClientVerifier<Sha256> = srp_client
-            .process_reply(&a, &username.as_bytes(), &password_buf, salt, b_pub)
+            .process_reply(&a, username.as_bytes(), &password_buf, salt, b_pub)
             .unwrap();
 
         let m = verifier.proof();
@@ -582,7 +579,7 @@ impl AppleAccount {
         }
         // println!("{:?}", res);
         let m2 = res.get("M2").unwrap().as_data().unwrap();
-        verifier.verify_server(&m2).unwrap();
+        verifier.verify_server(m2).unwrap();
 
         let spd = res.get("spd").unwrap().as_data().unwrap();
         let decrypted_spd = Self::decrypt_cbc(&verifier, spd);
@@ -604,7 +601,7 @@ impl AppleAccount {
     }
 
     fn create_session_key(usr: &SrpClientVerifier<Sha256>, name: &str) -> Vec<u8> {
-        <hmac::Hmac<Sha256> as hmac::Mac>::new_from_slice(&usr.key())
+        <hmac::Hmac<Sha256> as hmac::Mac>::new_from_slice(usr.key())
             .unwrap()
             .chain_update(name.as_bytes())
             .finalize()
@@ -619,7 +616,7 @@ impl AppleAccount {
 
         cbc::Decryptor::<aes::Aes256>::new_from_slices(&extra_data_key, extra_data_iv)
             .unwrap()
-            .decrypt_padded_vec_mut::<Pkcs7>(&data)
+            .decrypt_padded_vec_mut::<Pkcs7>(data)
             .unwrap()
     }
 
@@ -637,7 +634,7 @@ impl AppleAccount {
             return Err(Error::AuthSrp);
         }
 
-        return Ok(LoginState::Needs2FAVerification);
+        Ok(LoginState::Needs2FAVerification)
     }
 
     pub async fn send_sms_2fa_to_devices(&self, phone_id: u32) -> Result<LoginState, crate::Error> {
@@ -660,7 +657,7 @@ impl AppleAccount {
             return Err(Error::AuthSrp);
         }
 
-        return Ok(LoginState::NeedsSMS2FAVerification(body));
+        Ok(LoginState::NeedsSMS2FAVerification(body))
     }
 
     pub async fn get_auth_extras(&self) -> Result<AuthenticationExtras, Error> {
@@ -739,7 +736,7 @@ impl AppleAccount {
     fn check_error(res: &plist::Dictionary) -> Result<(), Error> {
         let res = match res.get("Status") {
             Some(plist::Value::Dictionary(d)) => d,
-            _ => &res,
+            _ => res,
         };
 
         if res.get("ec").unwrap().as_signed_integer().unwrap() != 0 {
