@@ -8,7 +8,6 @@ license = "MPL-2.0"
 
 [features]
 default = []
-vendored-botan = ["botan/vendored"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -30,7 +29,7 @@ reqwest = { version = "0.11.14", features = ["blocking", "json", "default-tls"] 
 omnisette = { version = "0.1.2", package = "nab138_omnisette" }
 thiserror = "2"
 tokio = "1"
-botan = "0.12.0"
+aes-gcm = "0.10.3"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt", "macros"] }

@@ -1,9 +1,12 @@
 use crate::{anisette::AnisetteData, Error};
-use aes::cipher::block_padding::Pkcs7;
+use aes::{
+    cipher::{block_padding::Pkcs7, consts::U16},
+    Aes256,
+};
+use aes_gcm::{aead::KeyInit, AeadInPlace, AesGcm, Nonce};
 use base64::{engine::general_purpose, Engine};
-use botan::Cipher;
 use cbc::cipher::{BlockDecryptMut, KeyIvInit};
-use hmac::{Hmac, Mac};
+use hmac::Mac;
 use omnisette::AnisetteConfiguration;
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
@@ -304,21 +307,20 @@ impl AppleAccount {
             return Err(Error::Parse);
         }
 
-        let mut cipher = Cipher::new("AES-256/GCM", botan::CipherDirection::Decrypt)
-            .map_err(|_| Error::Parse)?;
-        cipher.set_key(sk).map_err(|_| Error::Parse)?;
-        cipher
-            .set_associated_data(header)
-            .map_err(|_| Error::Parse)?;
-        cipher.start(iv).map_err(|_| Error::Parse)?;
+        let key = aes_gcm::Key::<AesGcm<Aes256, U16>>::from_slice(sk);
+        let cipher = AesGcm::<Aes256, U16>::new(key);
+        let nonce = Nonce::<U16>::from_slice(iv);
 
         let mut buf = ciphertext_and_tag.to_vec();
-        buf = cipher.finish(&mut buf).map_err(|_| {
-            Error::AuthSrpWithMessage(
-                0,
-                "Failed to decrypt app token (Botan AES-256/GCM).".to_string(),
-            )
-        })?;
+
+        cipher
+            .decrypt_in_place(nonce, header, &mut buf)
+            .map_err(|_| {
+                Error::AuthSrpWithMessage(
+                    0,
+                    "Failed to decrypt app token (AES-256/GCM aes-gcm).".to_string(),
+                )
+            })?;
 
         let decrypted_token: plist::Dictionary =
             plist::from_bytes(&buf).map_err(|_| Error::Parse)?;
@@ -340,7 +342,7 @@ impl AppleAccount {
     }
 
     fn create_checksum(session_key: &Vec<u8>, dsid: &str, app_name: &str) -> Vec<u8> {
-        Hmac::<Sha256>::new_from_slice(&session_key)
+        <hmac::Hmac<Sha256> as hmac::Mac>::new_from_slice(session_key.as_slice())
             .unwrap()
             .chain_update("apptokens".as_bytes())
             .chain_update(dsid.as_bytes())
@@ -602,7 +604,7 @@ impl AppleAccount {
     }
 
     fn create_session_key(usr: &SrpClientVerifier<Sha256>, name: &str) -> Vec<u8> {
-        Hmac::<Sha256>::new_from_slice(&usr.key())
+        <hmac::Hmac<Sha256> as hmac::Mac>::new_from_slice(&usr.key())
             .unwrap()
             .chain_update(name.as_bytes())
             .finalize()
