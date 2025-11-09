@@ -46,7 +46,7 @@ pub enum ADIError {
     ReqwestError(#[from] reqwest::Error),
     Base64Error(#[from] base64::DecodeError),
     InvalidHeaderValue(#[from] InvalidHeaderValue),
-    IOError(#[from] io::Error),
+    IOError(#[from] io::Error)
 }
 
 impl ADIError {
@@ -95,7 +95,7 @@ pub struct RequestOTPData {
 }
 
 #[cfg_attr(feature = "async", async_trait::async_trait(?Send))]
-pub trait ADIProxy: Send + Sync {
+pub trait ADIProxy: Send + Sync {   
     fn erase_provisioning(&mut self, ds_id: i64) -> Result<(), ADIError>;
     fn synchronize(&mut self, ds_id: i64, sim: &[u8]) -> Result<SynchronizeData, ADIError>;
     fn destroy_provisioning_session(&mut self, session: u32) -> Result<(), ADIError>;
@@ -291,9 +291,7 @@ pub struct ADIProxyAnisetteProvider<ProxyType: ADIProxy + 'static> {
 
 impl<ProxyType: ADIProxy + 'static> ADIProxyAnisetteProvider<ProxyType> {
     /// If you use this method, you are expected to set the identifier yourself.
-    pub fn without_identifier(
-        adi_proxy: ProxyType,
-    ) -> Result<ADIProxyAnisetteProvider<ProxyType>, ADIError> {
+    pub fn without_identifier(adi_proxy: ProxyType) -> Result<ADIProxyAnisetteProvider<ProxyType>, ADIError> {
         Ok(ADIProxyAnisetteProvider { adi_proxy })
     }
 
