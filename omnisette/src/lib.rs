@@ -4,7 +4,9 @@
 //!
 //! If you want remote anisette, make sure the `remote-anisette` feature is enabled. (it's currently on by default)
 
+use crate::adi_proxy::{ADIProxyAnisetteProvider, ConfigurableADIProxy};
 use crate::anisette_headers_provider::AnisetteHeadersProvider;
+use adi_proxy::ADIError;
 use std::io;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -47,6 +49,8 @@ pub enum AnisetteError {
     SerdeError(#[from] serde_json::Error),
     #[error("IO error {0}")]
     IOError(#[from] io::Error),
+    #[error("ADI error {0}")]
+    ADIError(#[from] ADIError),
     #[error("Invalid library format")]
     InvalidLibraryFormat,
     #[error("Misc")]
@@ -55,12 +59,6 @@ pub enum AnisetteError {
     MissingLibraries,
     #[error("{0}")]
     Anyhow(#[from] anyhow::Error),
-}
-
-impl From<tokio_tungstenite::tungstenite::error::Error> for AnisetteError {
-    fn from(err: tokio_tungstenite::tungstenite::error::Error) -> Self {
-        AnisetteError::WsError(Box::new(err))
-    }
 }
 
 pub const DEFAULT_ANISETTE_URL: &str = "https://ani.f1sh.me/";
@@ -150,12 +148,48 @@ impl AnisetteHeaders {
     pub fn get_anisette_headers_provider(
         configuration: AnisetteConfiguration,
     ) -> Result<AnisetteHeadersProviderRes, AnisetteError> {
-        Ok(AnisetteHeadersProviderRes::remote(Box::new(
+        #[cfg(target_os = "macos")]
+        if let Ok(prov) = aos_kit::AOSKitAnisetteProvider::new() {
+            return Ok(AnisetteHeadersProviderRes::local(Box::new(prov)));
+        }
+
+        // TODO: handle Err because it will just go to remote anisette and not tell the user anything
+        if let Ok(ssc_anisette_headers_provider) =
+            AnisetteHeaders::get_ssc_anisette_headers_provider(configuration.clone())
+        {
+            return Ok(ssc_anisette_headers_provider);
+        }
+
+        #[cfg(feature = "remote-anisette-v3")]
+        return Ok(AnisetteHeadersProviderRes::remote(Box::new(
             remote_anisette_v3::RemoteAnisetteProviderV3::new(
                 configuration.anisette_url_v3,
                 configuration.configuration_path.clone(),
                 configuration.macos_serial.clone(),
             ),
+        )));
+
+        #[cfg(feature = "remote-anisette")]
+        return Ok(AnisetteHeadersProviderRes::remote(Box::new(
+            remote_anisette::RemoteAnisetteProvider::new(configuration.anisette_url),
+        )));
+
+        #[cfg(not(feature = "remote-anisette"))]
+        bail!(AnisetteMetaError::UnsupportedDevice)
+    }
+
+    pub fn get_ssc_anisette_headers_provider(
+        configuration: AnisetteConfiguration,
+    ) -> Result<AnisetteHeadersProviderRes, AnisetteError> {
+        let mut ssc_adi_proxy = store_services_core::StoreServicesCoreADIProxy::new(
+            configuration.configuration_path(),
+        )?;
+        let config_path = configuration.configuration_path();
+        ssc_adi_proxy.set_provisioning_path(config_path.to_str().ok_or(
+            AnisetteError::InvalidArgument("configuration.configuration_path".to_string()),
+        )?)?;
+        Ok(AnisetteHeadersProviderRes::local(Box::new(
+            ADIProxyAnisetteProvider::new(ssc_adi_proxy, config_path.to_path_buf())?,
         )))
     }
 }
