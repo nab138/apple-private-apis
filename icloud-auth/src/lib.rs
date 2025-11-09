@@ -1,7 +1,8 @@
 pub mod anisette;
 mod client;
+use std::fmt::Display;
 
-pub use client::{AppleAccount, AuthenticationExtras, LoginState, TrustedPhoneNumber, VerifyBody};
+pub use client::{AppleAccount, LoginState, TrustedPhoneNumber, AuthenticationExtras, VerifyBody};
 pub use omnisette::AnisetteConfiguration;
 
 use thiserror::Error;
@@ -22,5 +23,5 @@ pub enum Error {
     #[error("Request failed {0}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("Failed getting anisette data {0}")]
-    ErrorGettingAnisette(#[from] omnisette::AnisetteError),
+    ErrorGettingAnisette(#[from] omnisette::AnisetteError)
 }
