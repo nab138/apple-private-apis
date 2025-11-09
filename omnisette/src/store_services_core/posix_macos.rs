@@ -1,11 +1,6 @@
-pub use libc::{
-    chmod, close, free, ftruncate, gettimeofday, malloc, mkdir, read, strncpy, umask, write,
-};
+pub use libc::{chmod, close, free, ftruncate, gettimeofday, malloc, mkdir, read, strncpy, umask, write};
 
-use libc::{
-    fstat as fstat_macos, lstat as lstat_macos, open as open_macos, stat as stat_macos, O_CREAT,
-    O_RDONLY, O_RDWR, O_WRONLY,
-};
+use libc::{lstat as lstat_macos, fstat as fstat_macos, stat as stat_macos, open as open_macos, O_CREAT, O_WRONLY, O_RDWR, O_RDONLY};
 
 use android_loader::sysv64;
 
