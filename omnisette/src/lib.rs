@@ -39,8 +39,10 @@ pub enum AnisetteError {
     PlistError(#[from] plist::Error),
     #[error("Request Error {0}")]
     ReqwestError(#[from] reqwest::Error),
+    #[cfg(feature = "remote-anisette-v3")]
     #[error("Provisioning socket error {0}")]
-    WsError(Box<tokio_tungstenite::tungstenite::error::Error>),
+    WsError(#[from] tokio_tungstenite::tungstenite::error::Error),
+    #[cfg(feature = "remote-anisette-v3")]
     #[error("JSON error {0}")]
     SerdeError(#[from] serde_json::Error),
     #[error("IO error {0}")]
