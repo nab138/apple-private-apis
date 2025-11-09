@@ -1,7 +1,5 @@
 # `apple-private-apis`
 
-This version has been published to crates.io temporarily (with permission from original developers) while they work on getting it ready for a proper publish. Find the original at https://github.com/SideStore/apple-private-apis
-
 _A set of Rust libraries to interact with apple's private APIs and servers, made for use in [**SideInstaller**](https://sidestore.io)._
 
 [![Rust](https://github.com/SideStore/apple-private-apis/actions/workflows/rust.yml/badge.svg)](https://github.com/SideStore/apple-private-apis/actions/workflows/rust.yml)
@@ -10,12 +8,11 @@ _A set of Rust libraries to interact with apple's private APIs and servers, made
 
 <!-- table -->
 
-| Library                                               | Description                                                            |
-| ----------------------------------------------------- | ---------------------------------------------------------------------- |
-| [`omnisette`](./omnisette)                            | A library to generate "anisette" data                                  |
-| [`icloud-auth`](./icloud-auth/)                       | A library to authenticate with Apple's GSA servers                     |
-| [`apple-dev-apis`](./apple-dev-apis/)                 | An implementation of Apple's Xcode signing/developer APIs              |
-| [`apple-codesign-wrapper`](./apple-codesign-wrapper/) | A wrapper for the `apple-codesign` crate. See the README for more info |
+| Library                               | Description                                               |
+| ------------------------------------- | --------------------------------------------------------- |
+| [`omnisette`](./omnisette)            | A library to generate "anisette" data                     |
+| [`icloud-auth`](./icloud-auth/)       | A library to authenticate with Apple's GSA servers        |
+| [`apple-dev-apis`](./apple-dev-apis/) | An implementation of Apple's Xcode signing/developer APIs |
 
 <!-- credits -->
 
