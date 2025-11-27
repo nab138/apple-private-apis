@@ -8,6 +8,7 @@ license = "MPL-2.0"
 
 [features]
 default = []
+obfuscate = ["omnisette/obfuscate"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

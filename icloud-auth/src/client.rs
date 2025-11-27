@@ -7,7 +7,7 @@ use aes_gcm::{aead::KeyInit, AeadInPlace, AesGcm, Nonce};
 use base64::{engine::general_purpose, Engine};
 use cbc::cipher::{BlockDecryptMut, KeyIvInit};
 use hmac::Mac;
-use omnisette::AnisetteConfiguration;
+use omnisette::{obf, AnisetteConfiguration};
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
     Certificate, Client, ClientBuilder, Response,
@@ -21,7 +21,6 @@ use srp::{
 use std::str::FromStr;
 use tokio::sync::Mutex;
 
-const GSA_ENDPOINT: &str = "https://gsa.apple.com/grandslam/GsService2";
 const APPLE_ROOT: &[u8] = include_bytes!("./apple_root.der");
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -166,7 +165,7 @@ async fn parse_response(
 ) -> Result<plist::Dictionary, crate::Error> {
     let res = res?.text().await?;
     let res: plist::Dictionary = plist::from_bytes(res.as_bytes())?;
-    let res: plist::Value = res.get("Response").unwrap().to_owned();
+    let res: plist::Value = res.get(obf!("Response").as_ref()).unwrap().to_owned();
     match res {
         plist::Value::Dictionary(dict) => Ok(dict),
         _ => Err(crate::Error::Parse),
@@ -221,13 +220,21 @@ impl AppleAccount {
 
     pub async fn get_app_token(&self, app_name: &str) -> Result<AppToken, Error> {
         let spd = self.spd.as_ref().unwrap();
-        let dsid = spd.get("adsid").unwrap().as_string().unwrap();
-        let auth_token = spd.get("GsIdmsToken").unwrap().as_string().unwrap();
+        let dsid = spd
+            .get(obf!("adsid").as_ref())
+            .unwrap()
+            .as_string()
+            .unwrap();
+        let auth_token = spd
+            .get(obf!("GsIdmsToken").as_ref())
+            .unwrap()
+            .as_string()
+            .unwrap();
 
         let valid_anisette = self.get_anisette().await;
 
-        let sk = spd.get("sk").unwrap().as_data().unwrap();
-        let c = spd.get("c").unwrap().as_data().unwrap();
+        let sk = spd.get(obf!("sk").as_ref()).unwrap().as_data().unwrap();
+        let c = spd.get(obf!("c").as_ref()).unwrap().as_data().unwrap();
 
         let checksum = Self::create_checksum(&sk.to_vec(), dsid, app_name);
 
@@ -242,8 +249,9 @@ impl AppleAccount {
             HeaderValue::from_str("akd/1.0 CFNetwork/978.0.7 Darwin/18.7.0").unwrap(),
         );
         gsa_headers.insert(
-            "X-MMe-Client-Info",
-            HeaderValue::from_str(&valid_anisette.get_header("x-mme-client-info")?).unwrap(),
+            obf!("X-MMe-Client-Info").as_ref(),
+            HeaderValue::from_str(&valid_anisette.get_header(obf!("x-mme-client-info").as_ref())?)
+                .unwrap(),
         );
 
         let header = RequestHeader {
@@ -253,7 +261,7 @@ impl AppleAccount {
             cpd: valid_anisette.to_plist(true, false, false),
             app: vec![app_name.to_string()],
             c: plist::Value::Data(c.to_vec()),
-            operation: "apptokens".to_owned(),
+            operation: obf!("apptokens").to_string(),
             t: auth_token.to_string(),
             u: dsid.to_string(),
             checksum: plist::Value::Data(checksum),
@@ -270,7 +278,7 @@ impl AppleAccount {
 
         let res = self
             .client
-            .post(GSA_ENDPOINT)
+            .post(obf!("https://gsa.apple.com/grandslam/GsService2").as_ref())
             .headers(gsa_headers.clone())
             .body(buffer)
             .send()
@@ -282,7 +290,7 @@ impl AppleAccount {
         }
 
         let encrypted_token = res
-            .get("et")
+            .get(obf!("et").as_ref())
             .ok_or(Error::Parse)?
             .as_data()
             .ok_or(Error::Parse)?;
@@ -330,7 +338,7 @@ impl AppleAccount {
         let app_token_dict = app_tokens.get(app_name).ok_or(Error::Parse)?;
         let app_token = app_token_dict.as_dictionary().ok_or(Error::Parse)?;
         let token = app_token
-            .get("token")
+            .get(obf!("token").as_ref())
             .and_then(|v| v.as_string())
             .ok_or(Error::Parse)?;
 
@@ -344,7 +352,7 @@ impl AppleAccount {
     fn create_checksum(session_key: &Vec<u8>, dsid: &str, app_name: &str) -> Vec<u8> {
         <hmac::Hmac<Sha256> as hmac::Mac>::new_from_slice(session_key.as_slice())
             .unwrap()
-            .chain_update("apptokens".as_bytes())
+            .chain_update(obf!("apptokens").as_bytes())
             .chain_update(dsid.as_bytes())
             .chain_update(app_name.as_bytes())
             .finalize()
@@ -427,14 +435,17 @@ impl AppleAccount {
 
     pub fn get_pet(&self) -> Option<String> {
         Some(
-            self.spd.as_ref().unwrap().get("t")?
+            self.spd
+                .as_ref()
+                .unwrap()
+                .get("t")?
                 .as_dictionary()
                 .unwrap()
-                .get("com.apple.gs.idms.pet")
+                .get(obf!("com.apple.gs.idms.pet").as_ref())
                 .unwrap()
                 .as_dictionary()
                 .unwrap()
-                .get("token")
+                .get(obf!("token").as_ref())
                 .unwrap()
                 .as_string()
                 .unwrap()
@@ -447,7 +458,7 @@ impl AppleAccount {
             self.spd
                 .as_ref()
                 .unwrap()
-                .get("fn")
+                .get(obf!("fn").as_ref())
                 .unwrap()
                 .as_string()
                 .unwrap()
@@ -482,11 +493,13 @@ impl AppleAccount {
         gsa_headers.insert("Accept", HeaderValue::from_str("*/*").unwrap());
         gsa_headers.insert(
             "User-Agent",
-            HeaderValue::from_str("akd/1.0 CFNetwork/978.0.7 Darwin/18.7.0").unwrap(),
+            HeaderValue::from_str(obf!("akd/1.0 CFNetwork/978.0.7 Darwin/18.7.0").as_ref())
+                .unwrap(),
         );
         gsa_headers.insert(
-            "X-MMe-Client-Info",
-            HeaderValue::from_str(&valid_anisette.get_header("x-mme-client-info")?).unwrap(),
+            obf!("X-MMe-Client-Info").as_ref(),
+            HeaderValue::from_str(&valid_anisette.get_header(obf!("x-mme-client-info").as_ref())?)
+                .unwrap(),
         );
 
         let header = RequestHeader {
@@ -496,7 +509,7 @@ impl AppleAccount {
             a_pub: plist::Value::Data(a_pub),
             cpd: valid_anisette.to_plist(true, false, false),
             operation: "init".to_string(),
-            ps: vec!["s2k".to_string(), "s2k_fo".to_string()],
+            ps: vec![obf!("s2k").to_string(), obf!("s2k_fo").to_string()],
             username: username.to_string(),
         };
 
@@ -514,7 +527,7 @@ impl AppleAccount {
 
         let res = self
             .client
-            .post(GSA_ENDPOINT)
+            .post(obf!("https://gsa.apple.com/grandslam/GsService2").as_ref())
             .headers(gsa_headers.clone())
             .body(buffer)
             .send()
@@ -526,10 +539,14 @@ impl AppleAccount {
             return Err(err_check.err().unwrap());
         }
         // println!("{:?}", res);
-        let salt = res.get("s").unwrap().as_data().unwrap();
-        let b_pub = res.get("B").unwrap().as_data().unwrap();
-        let iters = res.get("i").unwrap().as_signed_integer().unwrap();
-        let c = res.get("c").unwrap().as_string().unwrap();
+        let salt = res.get(obf!("s").as_ref()).unwrap().as_data().unwrap();
+        let b_pub = res.get(obf!("B").as_ref()).unwrap().as_data().unwrap();
+        let iters = res
+            .get(obf!("i").as_ref())
+            .unwrap()
+            .as_signed_integer()
+            .unwrap();
+        let c = res.get(obf!("c").as_ref()).unwrap().as_string().unwrap();
 
         let hashed_password = Sha256::digest(password.as_bytes());
 
@@ -566,7 +583,7 @@ impl AppleAccount {
 
         let res = self
             .client
-            .post(GSA_ENDPOINT)
+            .post(obf!("https://gsa.apple.com/grandslam/GsService2").as_ref())
             .headers(gsa_headers.clone())
             .body(buffer)
             .send()
@@ -578,18 +595,21 @@ impl AppleAccount {
             return Err(err_check.err().unwrap());
         }
         // println!("{:?}", res);
-        let m2 = res.get("M2").unwrap().as_data().unwrap();
+        let m2 = res.get(obf!("M2").as_ref()).unwrap().as_data().unwrap();
         verifier.verify_server(m2).unwrap();
 
-        let spd = res.get("spd").unwrap().as_data().unwrap();
+        let spd = res.get(obf!("spd").as_ref()).unwrap().as_data().unwrap();
         let decrypted_spd = Self::decrypt_cbc(&verifier, spd);
         let decoded_spd: plist::Dictionary = plist::from_bytes(&decrypted_spd).unwrap();
 
-        let status = res.get("Status").unwrap().as_dictionary().unwrap();
-
+        let status = res
+            .get(obf!("Status").as_ref())
+            .unwrap()
+            .as_dictionary()
+            .unwrap();
         self.spd = Some(decoded_spd);
 
-        if let Some(plist::Value::String(s)) = status.get("au") {
+        if let Some(plist::Value::String(s)) = status.get(obf!("au").as_ref()) {
             return match s.as_str() {
                 "trustedDeviceSecondaryAuth" => Ok(LoginState::NeedsDevice2FA),
                 "secondaryAuth" => Ok(LoginState::NeedsSMS2FA),
@@ -625,7 +645,7 @@ impl AppleAccount {
 
         let res = self
             .client
-            .get("https://gsa.apple.com/auth/verify/trusteddevice")
+            .get(obf!("https://gsa.apple.com/auth/verify/trusteddevice").as_ref())
             .headers(headers.await)
             .send()
             .await?;
@@ -648,7 +668,7 @@ impl AppleAccount {
 
         let res = self
             .client
-            .get("https://gsa.apple.com/auth")
+            .get(obf!("https://gsa.apple.com/auth").as_ref())
             .headers(headers.await)
             .send()
             .await?;
@@ -665,7 +685,7 @@ impl AppleAccount {
 
         let req = self
             .client
-            .get("https://gsa.apple.com/auth")
+            .get(obf!("https://gsa.apple.com/auth").as_ref())
             .headers(headers.await)
             .header("Accept", "application/json")
             .send()
@@ -691,10 +711,10 @@ impl AppleAccount {
         // println!("Recieved code: {}", code);
         let res = self
             .client
-            .get("https://gsa.apple.com/grandslam/GsService2/validate")
+            .get(obf!("https://gsa.apple.com/grandslam/GsService2/validate").as_ref())
             .headers(headers.await)
             .header(
-                HeaderName::from_str("security-code").unwrap(),
+                HeaderName::from_str(obf!("security-code").as_ref()).unwrap(),
                 HeaderValue::from_str(&code).unwrap(),
             )
             .send()
@@ -719,7 +739,7 @@ impl AppleAccount {
 
         let res = self
             .client
-            .post("https://gsa.apple.com/auth/verify/phone/securitycode")
+            .post(obf!("https://gsa.apple.com/auth/verify/phone/securitycode").as_ref())
             .headers(headers)
             .header("accept", "application/json")
             .json(&body)
@@ -739,10 +759,23 @@ impl AppleAccount {
             _ => res,
         };
 
-        if res.get("ec").unwrap().as_signed_integer().unwrap() != 0 {
+        if res
+            .get(obf!("ec").as_ref())
+            .unwrap()
+            .as_signed_integer()
+            .unwrap()
+            != 0
+        {
             return Err(Error::AuthSrpWithMessage(
-                res.get("ec").unwrap().as_signed_integer().unwrap(),
-                res.get("em").unwrap().as_string().unwrap().to_owned(),
+                res.get(obf!("ec").as_ref())
+                    .unwrap()
+                    .as_signed_integer()
+                    .unwrap(),
+                res.get(obf!("em").as_ref())
+                    .unwrap()
+                    .as_string()
+                    .unwrap()
+                    .to_owned(),
             ));
         }
 
@@ -751,8 +784,16 @@ impl AppleAccount {
 
     pub async fn build_2fa_headers(&self, sms: bool) -> HeaderMap {
         let spd = self.spd.as_ref().unwrap();
-        let dsid = spd.get("adsid").unwrap().as_string().unwrap();
-        let token = spd.get("GsIdmsToken").unwrap().as_string().unwrap();
+        let dsid = spd
+            .get(obf!("adsid").as_ref())
+            .unwrap()
+            .as_string()
+            .unwrap();
+        let token = spd
+            .get(obf!("GsIdmsToken").as_ref())
+            .unwrap()
+            .as_string()
+            .unwrap();
 
         let identity_token = general_purpose::STANDARD.encode(format!("{}:{}", dsid, token));
 
@@ -776,16 +817,24 @@ impl AppleAccount {
             );
             headers.insert("Accept", HeaderValue::from_str("text/x-xml-plist").unwrap());
         }
-        headers.insert("User-Agent", HeaderValue::from_str("Xcode").unwrap());
+        headers.insert(
+            "User-Agent",
+            HeaderValue::from_str(obf!("Xcode").as_ref()).unwrap(),
+        );
         headers.insert("Accept-Language", HeaderValue::from_str("en-us").unwrap());
         headers.append(
-            "X-Apple-Identity-Token",
+            obf!("X-Apple-Identity-Token").as_ref(),
             HeaderValue::from_str(&identity_token).unwrap(),
         );
 
         headers.insert(
             "Loc",
-            HeaderValue::from_str(&valid_anisette.get_header("x-apple-locale").unwrap()).unwrap(),
+            HeaderValue::from_str(
+                &valid_anisette
+                    .get_header(obf!("x-apple-locale").as_ref())
+                    .unwrap(),
+            )
+            .unwrap(),
         );
 
         headers
@@ -797,20 +846,31 @@ impl AppleAccount {
         body: Option<plist::Dictionary>,
     ) -> Result<plist::Dictionary, Error> {
         let spd = self.spd.as_ref().unwrap();
-        let app_token = self.get_app_token("com.apple.gs.xcode.auth").await?;
+        let app_token = self
+            .get_app_token(obf!("com.apple.gs.xcode.auth").as_ref())
+            .await?;
         let valid_anisette = self.get_anisette().await;
 
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", HeaderValue::from_static("text/x-xml-plist"));
         headers.insert("Accept", HeaderValue::from_static("text/x-xml-plist"));
         headers.insert("Accept-Language", HeaderValue::from_static("en-us"));
-        headers.insert("User-Agent", HeaderValue::from_static("Xcode"));
         headers.insert(
-            "X-Apple-I-Identity-Id",
-            HeaderValue::from_str(spd.get("adsid").unwrap().as_string().unwrap()).unwrap(),
+            "User-Agent",
+            HeaderValue::from_str(obf!("Xcode").as_ref()).unwrap(),
         );
         headers.insert(
-            "X-Apple-GS-Token",
+            obf!("X-Apple-I-Identity-Id").as_ref(),
+            HeaderValue::from_str(
+                spd.get(obf!("adsid").as_ref())
+                    .unwrap()
+                    .as_string()
+                    .unwrap(),
+            )
+            .unwrap(),
+        );
+        headers.insert(
+            obf!("X-Apple-GS-Token").as_ref(),
             HeaderValue::from_str(&app_token.auth_token).unwrap(),
         );
 
@@ -821,8 +881,11 @@ impl AppleAccount {
             );
         }
 
-        if let Ok(locale) = valid_anisette.get_header("x-apple-locale") {
-            headers.insert("X-Apple-Locale", HeaderValue::from_str(&locale).unwrap());
+        if let Ok(locale) = valid_anisette.get_header(obf!("x-apple-locale").as_ref()) {
+            headers.insert(
+                obf!("X-Apple-Locale").as_ref(),
+                HeaderValue::from_str(&locale).unwrap(),
+            );
         }
 
         let response = if let Some(body) = body {

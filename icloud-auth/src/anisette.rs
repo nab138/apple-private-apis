@@ -1,5 +1,5 @@
 use crate::Error;
-use omnisette::{AnisetteConfiguration, AnisetteHeaders};
+use omnisette::{obf, AnisetteConfiguration, AnisetteHeaders};
 use std::{collections::HashMap, time::SystemTime};
 
 #[derive(Debug, Clone)]
@@ -54,31 +54,37 @@ impl AnisetteData {
 
                     temp.replace(
                         temp.split('<').nth(3).unwrap().split('>').nth(0).unwrap(),
-                        "com.apple.AuthKit/1 (com.apple.dt.Xcode/3594.4.19)",
+                        obf!("com.apple.AuthKit/1 (com.apple.dt.Xcode/3594.4.19)").as_ref(),
                     )
                 }
                 None => {
                     return headers;
                 }
             };
-            headers.insert("X-Mme-Client-Info".to_owned(), client_info.to_owned());
+            headers.insert(
+                obf!("X-Mme-Client-Info").to_string(),
+                client_info.to_owned(),
+            );
         }
 
         if app_info {
             headers.insert(
-                "X-Apple-App-Info".to_owned(),
-                "com.apple.gs.xcode.auth".to_owned(),
+                obf!("X-Apple-App-Info").to_string(),
+                obf!("com.apple.gs.xcode.auth").to_string(),
             );
-            headers.insert("X-Xcode-Version".to_owned(), "11.2 (11B41)".to_owned());
+            headers.insert(
+                obf!("X-Xcode-Version").to_string(),
+                obf!("11.2 (11B41)").to_string(),
+            );
         }
 
         if cpd {
-            headers.insert("bootstrap".to_owned(), "true".to_owned());
-            headers.insert("icscrec".to_owned(), "true".to_owned());
-            headers.insert("loc".to_owned(), "en_GB".to_owned());
-            headers.insert("pbe".to_owned(), "false".to_owned());
-            headers.insert("prkgen".to_owned(), "true".to_owned());
-            headers.insert("svct".to_owned(), "iCloud".to_owned());
+            headers.insert(obf!("bootstrap").to_string(), obf!("true").to_string());
+            headers.insert(obf!("icscrec").to_string(), obf!("true").to_string());
+            headers.insert(obf!("loc").to_string(), obf!("en_GB").to_string());
+            headers.insert(obf!("pbe").to_string(), obf!("false").to_string());
+            headers.insert(obf!("prkgen").to_string(), obf!("true").to_string());
+            headers.insert(obf!("svct").to_string(), obf!("iCloud").to_string());
         }
 
         headers

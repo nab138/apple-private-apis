@@ -17,7 +17,7 @@ use std::fmt::Write;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::{anisette_headers_provider::AnisetteHeadersProvider, AnisetteError};
+use crate::{anisette_headers_provider::AnisetteHeadersProvider, obf, AnisetteError};
 
 fn plist_to_string<T: serde::Serialize>(value: &T) -> Result<String, plist::Error> {
     plist_to_buf(value).map(|val| String::from_utf8(val).unwrap())
@@ -150,29 +150,36 @@ impl AnisetteData {
     pub fn get_headers(&self, serial: String) -> HashMap<String, String> {
         let dt: DateTime<Utc> = Utc::now().round_subsecs(0);
 
-        HashMap::from_iter(
-            [
-                (
-                    "X-Apple-I-Client-Time".to_string(),
-                    dt.format("%+").to_string().replace("+00:00", "Z"),
-                ),
-                ("X-Apple-I-SRL-NO".to_string(), serial),
-                ("X-Apple-I-TimeZone".to_string(), "UTC".to_string()),
-                ("X-Apple-Locale".to_string(), "en_US".to_string()),
-                ("X-Apple-I-MD-RINFO".to_string(), self.routing_info.clone()),
-                ("X-Apple-I-MD-LU".to_string(), self.local_user_id.clone()),
-                (
-                    "X-Mme-Device-Id".to_string(),
-                    self.device_unique_identifier.clone(),
-                ),
-                ("X-Apple-I-MD".to_string(), self.one_time_password.clone()),
-                ("X-Apple-I-MD-M".to_string(), self.machine_id.clone()),
-                (
-                    "X-Mme-Client-Info".to_string(),
-                    self.device_description.clone(),
-                ),
-            ],
-        )
+        HashMap::from_iter([
+            (
+                obf!("X-Apple-I-Client-Time").to_string(),
+                dt.format("%+").to_string().replace("+00:00", "Z"),
+            ),
+            (obf!("X-Apple-I-SRL-NO").to_string(), serial),
+            (obf!("X-Apple-I-TimeZone").to_string(), "UTC".to_string()),
+            (obf!("X-Apple-Locale").to_string(), "en_US".to_string()),
+            (
+                obf!("X-Apple-I-MD-RINFO").to_string(),
+                self.routing_info.clone(),
+            ),
+            (
+                obf!("X-Apple-I-MD-LU").to_string(),
+                self.local_user_id.clone(),
+            ),
+            (
+                obf!("X-Mme-Device-Id").to_string(),
+                self.device_unique_identifier.clone(),
+            ),
+            (
+                obf!("X-Apple-I-MD").to_string(),
+                self.one_time_password.clone(),
+            ),
+            (obf!("X-Apple-I-MD-M").to_string(), self.machine_id.clone()),
+            (
+                obf!("X-Mme-Client-Info").to_string(),
+                self.device_description.clone(),
+            ),
+        ])
     }
 }
 
@@ -204,14 +211,20 @@ impl AnisetteClient {
         let dt: DateTime<Utc> = Utc::now().round_subsecs(0);
 
         builder
-            .header("X-Mme-Client-Info", &self.client_info.client_info)
-            .header("User-Agent", &self.client_info.user_agent)
-            .header("Content-Type", "text/x-xml-plist")
-            .header("X-Apple-I-MD-LU", encode_hex(&state.md_lu()))
-            .header("X-Mme-Device-Id", state.device_id())
-            .header("X-Apple-I-Client-Time", dt.format("%+").to_string())
-            .header("X-Apple-I-TimeZone", "UTC")
-            .header("X-Apple-Locale", "en_US")
+            .header(
+                obf!("X-Mme-Client-Info").as_ref(),
+                &self.client_info.client_info,
+            )
+            .header(obf!("User-Agent").as_ref(), &self.client_info.user_agent)
+            .header(obf!("Content-Type").as_ref(), "text/x-xml-plist")
+            .header(obf!("X-Apple-I-MD-LU").as_ref(), encode_hex(&state.md_lu()))
+            .header(obf!("X-Mme-Device-Id").as_ref(), state.device_id())
+            .header(
+                obf!("X-Apple-I-Client-Time").as_ref(),
+                dt.format("%+").to_string(),
+            )
+            .header(obf!("X-Apple-I-TimeZone").as_ref(), "UTC")
+            .header(obf!("X-Apple-Locale").as_ref(), "en_US")
     }
 
     pub async fn get_headers(&self, state: &AnisetteState) -> Result<AnisetteData, AnisetteError> {
@@ -285,7 +298,7 @@ impl AnisetteClient {
         let resp = self
             .build_apple_request(
                 state,
-                http_client.get("https://gsa.apple.com/grandslam/GsService2/lookup"),
+                http_client.get(obf!("https://gsa.apple.com/grandslam/GsService2/lookup").as_ref()),
             )
             .send()
             .await?;
