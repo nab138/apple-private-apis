@@ -211,20 +211,14 @@ impl AnisetteClient {
         let dt: DateTime<Utc> = Utc::now().round_subsecs(0);
 
         builder
-            .header(
-                obf!("X-Mme-Client-Info").as_ref(),
-                &self.client_info.client_info,
-            )
-            .header(obf!("User-Agent").as_ref(), &self.client_info.user_agent)
-            .header(obf!("Content-Type").as_ref(), "text/x-xml-plist")
-            .header(obf!("X-Apple-I-MD-LU").as_ref(), encode_hex(&state.md_lu()))
-            .header(obf!("X-Mme-Device-Id").as_ref(), state.device_id())
-            .header(
-                obf!("X-Apple-I-Client-Time").as_ref(),
-                dt.format("%+").to_string(),
-            )
-            .header(obf!("X-Apple-I-TimeZone").as_ref(), "UTC")
-            .header(obf!("X-Apple-Locale").as_ref(), "en_US")
+            .header(obf!("X-Mme-Client-Info"), &self.client_info.client_info)
+            .header(obf!("User-Agent"), &self.client_info.user_agent)
+            .header(obf!("Content-Type"), "text/x-xml-plist")
+            .header(obf!("X-Apple-I-MD-LU"), encode_hex(&state.md_lu()))
+            .header(obf!("X-Mme-Device-Id"), state.device_id())
+            .header(obf!("X-Apple-I-Client-Time"), dt.format("%+").to_string())
+            .header(obf!("X-Apple-I-TimeZone"), "UTC")
+            .header(obf!("X-Apple-Locale"), "en_US")
     }
 
     pub async fn get_headers(&self, state: &AnisetteState) -> Result<AnisetteData, AnisetteError> {
@@ -298,7 +292,7 @@ impl AnisetteClient {
         let resp = self
             .build_apple_request(
                 state,
-                http_client.get(obf!("https://gsa.apple.com/grandslam/GsService2/lookup").as_ref()),
+                http_client.get(obf!("https://gsa.apple.com/grandslam/GsService2/lookup")),
             )
             .send()
             .await?;
@@ -314,7 +308,7 @@ impl AnisetteClient {
             .unwrap();
 
         let start_provisioning_url = urls
-            .get("midStartProvisioning")
+            .get(obf!("midStartProvisioning"))
             .unwrap()
             .as_string()
             .unwrap();

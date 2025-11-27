@@ -54,7 +54,7 @@ impl AnisetteData {
 
                     temp.replace(
                         temp.split('<').nth(3).unwrap().split('>').nth(0).unwrap(),
-                        obf!("com.apple.AuthKit/1 (com.apple.dt.Xcode/3594.4.19)").as_ref(),
+                        obf!("com.apple.AuthKit/1 (com.apple.dt.Xcode/3594.4.19)"),
                     )
                 }
                 None => {

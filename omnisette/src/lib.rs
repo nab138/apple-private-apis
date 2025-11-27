@@ -174,11 +174,11 @@ macro_rules! obf {
     ($lit:literal) => {{
         #[cfg(feature = "obfuscate")]
         {
-            std::borrow::Cow::Owned(obfstr::obfstr!($lit).to_string())
+            obfstr::obfstr!($lit)
         }
         #[cfg(not(feature = "obfuscate"))]
         {
-            std::borrow::Cow::Borrowed($lit)
+            $lit
         }
     }};
 }
