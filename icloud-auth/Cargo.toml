@@ -1,6 +1,6 @@
 [package]
 name = "nab138_icloud_auth"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 description = "A library to authenticate with Apple's GSA servers"
 repository = "https://github.com/nab138/apple-private-apis"
@@ -8,7 +8,7 @@ license = "MPL-2.0"
 
 [features]
 default = []
-obfuscate = ["omnisette/obfuscate"]
+obfuscate = ["omnisette/obfuscate", "dep:obfstr"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -31,6 +31,7 @@ omnisette = { version = "0.1.5", package = "nab138_omnisette", path = "../omnise
 thiserror = "2"
 tokio = "1"
 aes-gcm = "0.10.3"
+obfstr = { version = "0.4", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt", "macros"] }
