@@ -313,7 +313,7 @@ impl AnisetteClient {
             .as_string()
             .unwrap();
         let end_provisioning_url = urls
-            .get("midFinishProvisioning")
+            .get(obf!("midFinishProvisioning"))
             .unwrap()
             .as_string()
             .unwrap();

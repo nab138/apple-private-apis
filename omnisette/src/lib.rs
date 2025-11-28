@@ -169,16 +169,18 @@ mod tests {
     }
 }
 
+#[cfg(feature = "obfuscate")]
 #[macro_export]
 macro_rules! obf {
-    ($lit:literal) => {{
-        #[cfg(feature = "obfuscate")]
-        {
-            obfstr::obfstr!($lit)
-        }
-        #[cfg(not(feature = "obfuscate"))]
-        {
-            $lit
-        }
-    }};
+    ($lit:literal) => {
+        &obfstr::obfstring!($lit)
+    };
+}
+
+#[cfg(not(feature = "obfuscate"))]
+#[macro_export]
+macro_rules! obf {
+    ($lit:literal) => {
+        &$lit.to_string()
+    };
 }

@@ -241,7 +241,7 @@ impl AppleAccount {
             HeaderValue::from_str("akd/1.0 CFNetwork/978.0.7 Darwin/18.7.0").unwrap(),
         );
         gsa_headers.insert(
-            obf!("X-MMe-Client-Info"),
+            HeaderName::from_str(&obf!("X-MMe-Client-Info")).unwrap(),
             HeaderValue::from_str(&valid_anisette.get_header(obf!("x-mme-client-info"))?).unwrap(),
         );
 
@@ -487,7 +487,7 @@ impl AppleAccount {
             HeaderValue::from_str(obf!("akd/1.0 CFNetwork/978.0.7 Darwin/18.7.0")).unwrap(),
         );
         gsa_headers.insert(
-            obf!("X-MMe-Client-Info"),
+            HeaderName::from_str(&obf!("X-MMe-Client-Info")).unwrap(),
             HeaderValue::from_str(&valid_anisette.get_header(obf!("x-mme-client-info"))?).unwrap(),
         );
 
@@ -780,7 +780,7 @@ impl AppleAccount {
         headers.insert("User-Agent", HeaderValue::from_str(obf!("Xcode")).unwrap());
         headers.insert("Accept-Language", HeaderValue::from_str("en-us").unwrap());
         headers.append(
-            obf!("X-Apple-Identity-Token"),
+            HeaderName::from_str(&obf!("X-Apple-Identity-Token")).unwrap(),
             HeaderValue::from_str(&identity_token).unwrap(),
         );
 
@@ -808,11 +808,11 @@ impl AppleAccount {
         headers.insert("Accept-Language", HeaderValue::from_static("en-us"));
         headers.insert("User-Agent", HeaderValue::from_str(obf!("Xcode")).unwrap());
         headers.insert(
-            obf!("X-Apple-I-Identity-Id"),
+            HeaderName::from_str(&obf!("X-Apple-I-Identity-Id")).unwrap(),
             HeaderValue::from_str(spd.get(obf!("adsid")).unwrap().as_string().unwrap()).unwrap(),
         );
         headers.insert(
-            obf!("X-Apple-GS-Token"),
+            HeaderName::from_str(&obf!("X-Apple-GS-Token")).unwrap(),
             HeaderValue::from_str(&app_token.auth_token).unwrap(),
         );
 
@@ -825,7 +825,7 @@ impl AppleAccount {
 
         if let Ok(locale) = valid_anisette.get_header(obf!("x-apple-locale")) {
             headers.insert(
-                obf!("X-Apple-Locale"),
+                HeaderName::from_str(&obf!("X-Apple-Locale")).unwrap(),
                 HeaderValue::from_str(&locale).unwrap(),
             );
         }
