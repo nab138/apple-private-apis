@@ -95,7 +95,7 @@ pub struct AppleAccount {
     //mutable spd
     pub spd: Option<plist::Dictionary>,
     pub apple_id: String,
-    client: Client,
+    pub client: Client,
 }
 
 #[derive(Clone, Debug)]
